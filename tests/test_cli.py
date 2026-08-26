@@ -67,3 +67,48 @@ def test_cli_bench_resolves_short_names_and_allocates_managed_output(
     assert captured["sessions"] == 2
     stderr = capsys.readouterr().err
     assert "bench-001" in stderr
+
+
+def test_cli_doctor_resolves_managed_defaults(tmp_path: Path, monkeypatch, capsys) -> None:
+    from comfy_metal.doctor import DoctorCheck, DoctorReport
+
+    workspace = tmp_path / ".comfy-metal"
+    init_workspace(workspace)
+    comfyui = tmp_path / "ComfyUI"
+    comfyui.mkdir()
+    captured = {}
+
+    def fake_doctor(**kwargs):
+        captured.update(kwargs)
+        return DoctorReport((DoctorCheck("MPS", "pass", "available"),), {"ok": True})
+
+    monkeypatch.setattr("comfy_metal.cli.run_doctor", fake_doctor)
+
+    assert main([
+        "doctor",
+        "--workspace", str(workspace),
+        "--comfyui-root", str(comfyui),
+    ]) == 0
+
+    assert captured["runtime_path"] == workspace / "runtimes" / "local.toml"
+    assert captured["profile_path"] == workspace / "profiles" / "stock.toml"
+    assert "Benchmark readiness: READY" in capsys.readouterr().out
+
+
+def test_cli_doctor_returns_two_when_blocked(tmp_path: Path, monkeypatch, capsys) -> None:
+    from comfy_metal.doctor import DoctorCheck, DoctorReport
+
+    workspace = tmp_path / ".comfy-metal"
+    init_workspace(workspace)
+    comfyui = tmp_path / "ComfyUI"
+    comfyui.mkdir()
+    monkeypatch.setattr(
+        "comfy_metal.cli.run_doctor",
+        lambda **kwargs: DoctorReport((DoctorCheck("MPS", "fail", "unavailable"),)),
+    )
+
+    assert main([
+        "doctor", "--workspace", str(workspace), "--comfyui-root", str(comfyui), "--json"
+    ]) == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["readiness"] == "BLOCKED"

@@ -8,11 +8,34 @@ __pycache__/
 .venv/
 venv/
 
+# Build / packaging
+build/
+dist/
+wheels/
+
+# Coverage / test environments
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+
 # Local environment
 .env
 .env.*
 !.env.example
+.direnv/
 .DS_Store
+._*
+
+# Editor / temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.tmp
+*~
 
 # Benchmark artifacts
 outputs/

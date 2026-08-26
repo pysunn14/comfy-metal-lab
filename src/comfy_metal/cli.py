@@ -10,6 +10,7 @@ from pathlib import Path
 from .benchmark import run_benchmark
 from .compare import compare_benchmarks
 from .config import load_profile, load_workload
+from .doctor import format_doctor_report, run_doctor
 from .inspection import inspect_workflow, render_workload_toml
 from .preflight import run_preflight
 from .run import run_once
@@ -42,6 +43,17 @@ def _parser() -> argparse.ArgumentParser:
     import_parser.add_argument("workflow", type=Path)
     import_parser.add_argument("--name", default=None)
     _add_workspace_arg(import_parser)
+
+
+    doctor_parser = subparsers.add_parser(
+        "doctor", help="Check benchmark readiness using the selected ComfyUI runtime/profile"
+    )
+    doctor_parser.add_argument("--comfyui-root", type=Path, required=True)
+    doctor_parser.add_argument("--runtime", type=Path, default=Path("local"))
+    doctor_parser.add_argument("--profile", type=Path, default=Path("stock"))
+    doctor_parser.add_argument("--startup-timeout", type=float, default=60.0)
+    doctor_parser.add_argument("--json", action="store_true", dest="json_output")
+    _add_workspace_arg(doctor_parser)
 
     inspect_parser = subparsers.add_parser(
         "inspect", help="Inspect an API-format ComfyUI workflow and suggest a workload manifest"
@@ -144,6 +156,25 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
         return 0
+    if args.command == "doctor":
+        runtime = resolve_managed_config(
+            args.runtime, kind="runtime", workspace_root=args.workspace
+        )
+        profile = resolve_managed_config(
+            args.profile, kind="profile", workspace_root=args.workspace
+        )
+        report = run_doctor(
+            comfyui_root=args.comfyui_root,
+            runtime_path=runtime,
+            profile_path=profile,
+            workspace_root=args.workspace,
+            startup_timeout_s=args.startup_timeout,
+        )
+        if args.json_output:
+            print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+        else:
+            print(format_doctor_report(report))
+        return 2 if report.readiness == "BLOCKED" else 0
     if args.command == "inspect":
         return _inspect(args)
     if args.command == "preflight":

@@ -106,6 +106,19 @@ ComfyUI는 이 저장소에 vendoring하거나 fork하지 않습니다.
 
 향후 MLX 등 다른 Apple-native inference runtime도 확장 대상으로 고려합니다.
 
+## Quickstart
+
+처음 사용할 때는 프로젝트별 `.comfy-metal/` workspace를 만들고, 실제 benchmark 전에 doctor로 runtime 상태를 확인할 수 있습니다.
+
+```bash
+uv sync
+comfy-metal init
+comfy-metal doctor --comfyui-root ~/projects/ComfyUI
+comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
+```
+
+`doctor`는 이미지를 생성하지 않고 ComfyUI Python/PyTorch/MPS, runtime 경로, machine state, 실행 중인 ComfyUI/benchmark process, 실제 ComfyUI startup과 MPS telemetry를 확인합니다. 결과는 `READY`, `WARN`, `BLOCKED` 중 하나입니다.
+
 ## Runtime과 Profile
 
 머신별 경로와 ComfyUI 실행 환경은 runtime config에 둡니다.

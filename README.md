@@ -25,10 +25,13 @@ Initialize a project-local managed workspace, then import an API-format ComfyUI 
 ```bash
 uv sync
 comfy-metal init
+comfy-metal doctor --comfyui-root ~/projects/ComfyUI
 comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
 ```
 
 This creates a private local workspace under `.comfy-metal/` with managed workloads, runtimes, profiles, and results. The default `local` runtime and `stock` profile are created automatically.
+
+`comfy-metal doctor` performs a real readiness check: it probes the selected ComfyUI Python/PyTorch/MPS runtime, validates runtime paths, records machine state, detects competing ComfyUI/benchmark processes, starts ComfyUI with the selected runtime/profile, checks `/system_stats`, and verifies the MPS telemetry wrapper. It reports `READY`, `WARN`, or `BLOCKED` without generating an image.
 
 Managed configs can be referenced by name:
 
