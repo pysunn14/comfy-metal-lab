@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local environment
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Benchmark artifacts
+outputs/
+results/
+benchmarks/results/
+*.log
+
+# Local/private workloads and model assets
+workloads/private/
+models/
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+*.gguf
