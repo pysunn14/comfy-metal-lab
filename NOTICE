@@ -1,0 +1,17 @@
+Comfy Metal Lab
+Copyright 2026 pysunn14
+
+Licensed under the Apache License, Version 2.0.
+
+------------------------------------------------------------------------------
+Third-party attributions
+------------------------------------------------------------------------------
+
+Portions of the benchmark orchestration design and implementation are adapted
+from mlx-teacache (https://github.com/IonDen/mlx-teacache):
+  Copyright 2026 Denis Ineshin
+  Licensed under the Apache License, Version 2.0.
+
+Specifically, Comfy Metal Lab adopts and modifies the subprocess-per-repetition
+benchmark isolation pattern and sentinel-prefixed JSON worker result protocol
+for a ComfyUI/PyTorch MPS benchmarking context.

@@ -28,3 +28,6 @@ models/
 *.pth
 *.pt
 *.gguf
+
+# Local/private experiment workspace
+_local/
