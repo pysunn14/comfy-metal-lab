@@ -22,9 +22,9 @@ Comfy Metal Lab은 실행 환경을 세 가지로 나눕니다.
 
 ## 에이전트로 시작하기
 
-코딩 에이전트에게 맡길 때는 먼저 [`AGENTS.md`](AGENTS.md)를 읽게 하면 됩니다. 에이전트는 managed workspace를 기준으로 `init → import-workload → doctor → preflight → bench` 순서를 따릅니다.
+코딩 에이전트에게 맡길 때는 먼저 [`AGENTS.md`](AGENTS.md)를 읽게 하면 됩니다. 실제 사용할 workflow/workload를 사용자가 지정하는 것을 기본으로 하며, 대상이 불명확하면 에이전트가 로컬 파일에서 임의로 고르지 않고 먼저 물어보도록 합니다. `doctor`와 `preflight`는 준비 상태 확인에 사용할 수 있지만, 실제 이미지 생성 benchmark는 사용자가 측정을 명확히 요청했을 때만 실행합니다.
 
-> `AGENTS.md`를 먼저 읽고, 내 ComfyUI API workflow를 managed workspace에 가져온 뒤 doctor와 preflight를 통과하고 benchmark protocol에 따라 측정해줘.
+> `AGENTS.md`를 먼저 읽고 managed workspace와 runtime을 확인해줘. 내가 정확한 workflow/workload를 지정하지 않았다면 어떤 대상을 사용할지 먼저 물어봐. 대상이 정해지면 doctor와 preflight까지 준비하고, 내가 실제 측정을 요청한 경우에만 benchmark를 실행해줘.
 
 ## 빠른 시작
 
@@ -171,10 +171,6 @@ value = false
 
 `overrides`와 `session.mutations`는 역할이 다르며 같은 target을 동시에 지정할 수 없습니다.
 
-## Case study
-
-- [Spectrum KSampler ablation on Apple Silicon](docs/case-studies/spectrum-ksampler-ablation.md)
-
 ## CLI 요약
 
 일반적인 사용 순서는 다음과 같습니다.
@@ -196,7 +192,6 @@ init → import-workload → doctor → preflight → bench → compare
 - wall-clock + MPS memory + swap/environment telemetry
 - machine-readable JSON report
 - SSIM quality regression check
-- 실제 Spectrum KSampler ablation case study
 
 작은 성능 차이에 대한 interleaved/randomized 실행 같은 고급 실험 기능은 필요할 때 추가하는 방향입니다.
 

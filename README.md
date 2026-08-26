@@ -16,9 +16,9 @@ The project is currently in early development. The benchmark protocol uses isola
 
 ## Start with an Agent
 
-Using a coding agent? Ask it to read [`AGENTS.md`](AGENTS.md) first, then describe the ComfyUI workload or comparison you want to run.
+Using a coding agent? Ask it to read [`AGENTS.md`](AGENTS.md) first. Give it the workflow/workload you actually want to use; if the benchmark target is ambiguous, the agent should ask rather than infer one from local files. Doctor and preflight may be used to validate readiness, but generation should only start when you explicitly request a benchmark.
 
-> Read `AGENTS.md` first, then benchmark my ComfyUI workload using the repository protocol.
+> Read `AGENTS.md` first and inspect the managed workspace/runtime. If I have not specified the exact workflow or workload to benchmark, ask me which one to use. Once the target is explicit, prepare it and run doctor/preflight; only run the benchmark when I explicitly ask for a measurement.
 
 ## Quickstart
 
@@ -103,10 +103,6 @@ value = false
 ```
 
 Static overrides and session mutations are separate contracts and cannot target the same workflow input/path.
-
-## Documentation
-
-- [Case study: Spectrum KSampler ablation on Apple Silicon](docs/case-studies/spectrum-ksampler-ablation.md)
 
 ## License
 
