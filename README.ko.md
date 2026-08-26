@@ -18,15 +18,15 @@ Comfy Metal Lab은 실행 환경을 세 가지로 나눕니다.
 
 성능 비교에서는 workload와 runtime을 고정하고 profile만 바꿉니다.
 
-## Start with an Agent
+## 에이전트로 시작하기
 
-코딩 에이전트에게 전담하려면 먼저 [`AGENTS.md`](AGENTS.md)를 읽게 한 뒤, 실행하거나 비교할 ComfyUI workload를 설명하면 됩니다.
+코딩 에이전트에게 맡길 때는 먼저 [`AGENTS.md`](AGENTS.md)를 읽게 하면 됩니다. 에이전트는 managed workspace를 기준으로 `init → import-workload → doctor → preflight → bench` 순서를 따릅니다.
 
-> `AGENTS.md`를 먼저 읽고 저장소의 benchmark protocol에 따라 내 ComfyUI workload를 벤치마크해줘.
+> `AGENTS.md`를 먼저 읽고, 내 ComfyUI API workflow를 managed workspace에 가져온 뒤 doctor와 preflight를 통과하고 benchmark protocol에 따라 측정해줘.
 
 ## 빠른 시작
 
-처음에는 프로젝트별 로컬 작업공간을 만든 뒤, 디스크 어디에 있는 API-format ComfyUI workflow든 가져오면 됩니다.
+프로젝트별 로컬 작업공간을 만들고, 디스크 어디에 있는 API-format ComfyUI workflow든 가져올 수 있습니다.
 
 ```bash
 uv sync
@@ -34,7 +34,18 @@ comfy-metal init
 comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
 ```
 
-그러면 `.comfy-metal/` 아래에 workload, runtime, profile, result가 정리됩니다. 기본 `local` runtime과 `stock` profile도 자동 생성됩니다.
+`.comfy-metal/` 아래에 workload, runtime, profile, result가 정리됩니다. 기본 `local` runtime과 `stock` profile도 자동 생성됩니다.
+
+실제 benchmark 전에 doctor로 머신과 runtime이 측정 가능한 상태인지 확인합니다. doctor는 이미지를 생성하지 않고 Python/PyTorch/MPS, runtime 경로, machine state, 경쟁 process, 실제 ComfyUI startup과 MPS telemetry를 확인해 `READY`, `WARN`, `BLOCKED` 중 하나를 반환합니다.
+
+```bash
+comfy-metal doctor \
+  --comfyui-root ~/projects/ComfyUI \
+  --runtime local \
+  --profile stock
+```
+
+그다음 workload에 필요한 custom node가 실제 runtime에 있는지 preflight하고 benchmark를 실행합니다.
 
 ```bash
 comfy-metal preflight \
@@ -51,7 +62,7 @@ comfy-metal bench \
   --sessions 3
 ```
 
-`--output-dir`를 생략하면 결과는 `.comfy-metal/results/` 아래에 자동으로 새 번호를 받아 저장됩니다. 기존처럼 명시적인 파일 경로를 사용하는 방식도 그대로 지원합니다.
+`--output-dir`를 생략하면 `.comfy-metal/results/` 아래에 새 결과 디렉터리가 자동으로 할당됩니다. 명시적인 파일 경로 방식도 그대로 지원합니다.
 
 ## 목표
 
@@ -105,19 +116,6 @@ ComfyUI는 이 저장소에 vendoring하거나 fork하지 않습니다.
 - unified memory profiling
 
 향후 MLX 등 다른 Apple-native inference runtime도 확장 대상으로 고려합니다.
-
-## Quickstart
-
-처음 사용할 때는 프로젝트별 `.comfy-metal/` workspace를 만들고, 실제 benchmark 전에 doctor로 runtime 상태를 확인할 수 있습니다.
-
-```bash
-uv sync
-comfy-metal init
-comfy-metal doctor --comfyui-root ~/projects/ComfyUI
-comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
-```
-
-`doctor`는 이미지를 생성하지 않고 ComfyUI Python/PyTorch/MPS, runtime 경로, machine state, 실행 중인 ComfyUI/benchmark process, 실제 ComfyUI startup과 MPS telemetry를 확인합니다. 결과는 `READY`, `WARN`, `BLOCKED` 중 하나입니다.
 
 ## Runtime과 Profile
 
@@ -175,38 +173,30 @@ value = false
 
 - [Spectrum KSampler ablation on Apple Silicon](docs/case-studies/spectrum-ksampler-ablation.md)
 
-## CLI
+## CLI 요약
 
-> 아직 초기 개발 단계이며 인터페이스는 변경될 수 있습니다.
+일반적인 사용 순서는 다음과 같습니다.
 
-```bash
-comfy-metal preflight \
-  --comfyui-root ~/projects/ComfyUI \
-  --workload workloads/example/workload.toml \
-  --runtime runtimes/local.toml \
-  --profile profiles/stock.toml
-
-comfy-metal bench \
-  --comfyui-root ~/projects/ComfyUI \
-  --workload workloads/example/workload.toml \
-  --runtime runtimes/local.toml \
-  --profile profiles/metal-flash.toml \
-  --sessions 3
+```text
+init → import-workload → doctor → preflight → bench → compare
 ```
+
+`inspect`는 workflow를 읽기 전용으로 분석하거나 manifest target을 수동으로 확인할 때 사용할 수 있습니다.
 
 ## 현재 상태
 
-초기 개발 단계입니다.
+현재 하네스는 실제 ComfyUI workload를 가져와 runtime readiness를 확인하고, 호환성 preflight 후 재현 가능한 cold/warm benchmark와 품질 비교까지 수행할 수 있습니다.
 
-첫 번째 milestone은 하나의 신뢰할 수 있는 baseline benchmark를 만드는 것입니다.
-
-- deterministic workload
+- managed `.comfy-metal/` workspace
+- `doctor` readiness check
+- workflow import / inspection / static override
 - isolated cold/warm sessions
-- model-cold / model-warm measurements
-- wall-clock timing
-- MPS memory metrics
-- JSON report
+- wall-clock + MPS memory + swap/environment telemetry
+- machine-readable JSON report
 - SSIM quality regression check
+- 실제 Spectrum KSampler ablation case study
+
+작은 성능 차이에 대한 interleaved/randomized 실행 같은 고급 실험 기능은 필요할 때 추가하는 방향입니다.
 
 ## 라이선스
 

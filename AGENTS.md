@@ -12,6 +12,21 @@ Run reproducible ComfyUI inference benchmarks on Apple Silicon. A successful gen
 
 Keep both the workload and runtime identical when comparing profiles.
 
+## Default agent workflow
+
+When a user asks to benchmark a workflow, prefer the managed workspace flow unless they explicitly provide a manual layout:
+
+1. Read this file before changing code or running a benchmark.
+2. If `.comfy-metal/` is missing, run `comfy-metal init`.
+3. If the workflow is outside the managed workspace, import it with `comfy-metal import-workload <workflow> --name <name>`. Do not copy private workflows into public repository paths. If automatic import is ambiguous, use `comfy-metal inspect <workflow>` and create/edit the managed manifest with explicit mutation/output targets instead of guessing.
+4. Run `comfy-metal doctor --comfyui-root <ComfyUI>` with the selected runtime/profile. Treat `BLOCKED` as a stop condition; surface `WARN` evidence before interpreting small speedups.
+5. Run `comfy-metal preflight` for the selected workload/runtime/profile before expensive generation.
+6. Run `comfy-metal bench` using managed short names when available. Let the harness allocate a result directory unless the user requests a specific path.
+7. Compare only runs whose workload, runtime, and benchmark contract satisfy the comparison invariants.
+8. Report the raw/median timing evidence, quality result, relevant warnings, and artifact locations.
+
+Do not ask the user to manually organize files that `init` or `import-workload` can manage. Do not generate an image during `doctor` or `preflight`.
+
 ## Benchmark rules
 
 - Use a deterministic workload when measuring performance.
