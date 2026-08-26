@@ -72,6 +72,7 @@ Static overrides and session mutations are separate contracts and cannot target 
 ## Documentation
 
 - [한국어 README](README.ko.md)
+- [Case study: Spectrum KSampler ablation on Apple Silicon](docs/case-studies/spectrum-ksampler-ablation.md)
 
 ## License
 

@@ -133,6 +133,10 @@ value = false
 
 `overrides`와 `session.mutations`는 역할이 다르며 같은 target을 동시에 지정할 수 없습니다.
 
+## Case study
+
+- [Spectrum KSampler ablation on Apple Silicon](docs/case-studies/spectrum-ksampler-ablation.md)
+
 ## CLI
 
 > 아직 초기 개발 단계이며 인터페이스는 변경될 수 있습니다.
