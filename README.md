@@ -2,6 +2,8 @@
 
 > Reproducible ComfyUI inference benchmarking and optimization for Apple Silicon.
 
+[한국어 README](README.ko.md)
+
 Comfy Metal Lab is an open-source experiment harness for benchmarking ComfyUI image-generation workloads on Apple Silicon and comparing MPS/Metal inference optimizations under controlled conditions.
 
 ComfyUI is treated as an **external runtime**, not vendored or forked by this project.
@@ -104,7 +106,6 @@ Static overrides and session mutations are separate contracts and cannot target 
 
 ## Documentation
 
-- [한국어 README](README.ko.md)
 - [Case study: Spectrum KSampler ablation on Apple Silicon](docs/case-studies/spectrum-ksampler-ablation.md)
 
 ## License
