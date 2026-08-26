@@ -24,6 +24,35 @@ Comfy Metal Lab은 실행 환경을 세 가지로 나눕니다.
 
 > `AGENTS.md`를 먼저 읽고 저장소의 benchmark protocol에 따라 내 ComfyUI workload를 벤치마크해줘.
 
+## 빠른 시작
+
+처음에는 프로젝트별 로컬 작업공간을 만든 뒤, 디스크 어디에 있는 API-format ComfyUI workflow든 가져오면 됩니다.
+
+```bash
+uv sync
+comfy-metal init
+comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
+```
+
+그러면 `.comfy-metal/` 아래에 workload, runtime, profile, result가 정리됩니다. 기본 `local` runtime과 `stock` profile도 자동 생성됩니다.
+
+```bash
+comfy-metal preflight \
+  --comfyui-root ~/projects/ComfyUI \
+  --workload my-workload \
+  --runtime local \
+  --profile stock
+
+comfy-metal bench \
+  --comfyui-root ~/projects/ComfyUI \
+  --workload my-workload \
+  --runtime local \
+  --profile stock \
+  --sessions 3
+```
+
+`--output-dir`를 생략하면 결과는 `.comfy-metal/results/` 아래에 자동으로 새 번호를 받아 저장됩니다. 기존처럼 명시적인 파일 경로를 사용하는 방식도 그대로 지원합니다.
+
 ## 목표
 
 - Apple Silicon에서 재현 가능한 ComfyUI benchmark
@@ -32,7 +61,7 @@ Comfy Metal Lab은 실행 환경을 세 가지로 나눕니다.
 - optimization별 성능 비교
 - machine-readable JSON report
 - 이미지 품질 regression check
-- 공개 example workload 제공
+- 프로젝트별 managed workspace 제공
 
 ## 구조
 
@@ -114,11 +143,7 @@ node = "9"
 index = 0
 ```
 
-일반적인 API-format workflow는 다음 명령으로 mutation/output 후보를 탐지할 수 있습니다. 후보가 하나씩으로 명확하면 `--write`로 manifest도 생성할 수 있습니다.
-
-```bash
-comfy-metal inspect workflow_api.json --write workload.toml
-```
+일반적인 API-format workflow는 `comfy-metal import-workload workflow_api.json`으로 managed workspace에 가져올 수 있습니다. seed/noise와 `SaveImage` 후보가 명확하면 workload manifest도 자동 생성됩니다. `comfy-metal inspect`는 읽기 전용 또는 수동 설정용으로 그대로 사용할 수 있습니다.
 
 EasyUse처럼 설정이 JSON 문자열 안에 들어 있는 경우에는 `path = "sampler.seed"`, `format = "json"` 형태의 nested mutation을 사용할 수 있습니다.
 

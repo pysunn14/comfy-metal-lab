@@ -31,3 +31,6 @@ models/
 
 # Local/private experiment workspace
 _local/
+
+# Managed local workspace
+.comfy-metal/

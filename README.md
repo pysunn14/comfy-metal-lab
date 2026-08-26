@@ -18,6 +18,36 @@ Using a coding agent? Ask it to read [`AGENTS.md`](AGENTS.md) first, then descri
 
 > Read `AGENTS.md` first, then benchmark my ComfyUI workload using the repository protocol.
 
+## Quickstart
+
+Initialize a project-local managed workspace, then import an API-format ComfyUI workflow from anywhere on disk:
+
+```bash
+uv sync
+comfy-metal init
+comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
+```
+
+This creates a private local workspace under `.comfy-metal/` with managed workloads, runtimes, profiles, and results. The default `local` runtime and `stock` profile are created automatically.
+
+Managed configs can be referenced by name:
+
+```bash
+comfy-metal preflight \
+  --comfyui-root ~/projects/ComfyUI \
+  --workload my-workload \
+  --runtime local \
+  --profile stock
+
+comfy-metal bench \
+  --comfyui-root ~/projects/ComfyUI \
+  --workload my-workload \
+  --runtime local \
+  --profile stock \
+  --sessions 3
+```
+
+When `--output-dir` is omitted, results are allocated automatically under `.comfy-metal/results/`. Explicit paths remain supported for advanced/manual setups.
 
 ## Runtime compatibility
 
@@ -56,7 +86,7 @@ node = "9"
 index = 0
 ```
 
-For common API-format workflows, `comfy-metal inspect workflow_api.json` detects seed/noise inputs and `SaveImage` outputs. Add `--write workload.toml` when the inspection is unambiguous. Nested JSON settings are supported through `path` + `format = "json"`.
+For common API-format workflows, `comfy-metal import-workload workflow_api.json` copies the workflow into the managed workspace and generates a manifest when seed/noise and `SaveImage` targets are unambiguous. `comfy-metal inspect` remains available as a read-only/manual inspection tool. Nested JSON settings are supported through `path` + `format = "json"`.
 
 Use `[[overrides]]` for workload-static variants that should be applied before both cold and warm prompts:
 

@@ -50,8 +50,8 @@ Treat structured run artifacts as the source of truth, not a console success mes
 ## Repository boundaries
 
 - Public source code must not depend on personal model names, private prompts, private characters, or machine-specific private assets.
-- Local/private workloads, runtimes, profiles, reference repositories, and experiment outputs belong under `_local/`.
-- Never commit `_local/`.
+- User-managed local workloads, runtimes, profiles, and experiment outputs belong under `.comfy-metal/`; keep that workspace private and uncommitted.
+- Developer-only legacy/reference material may remain under `_local/`. Never commit `.comfy-metal/` or `_local/`.
 
 ## Development
 

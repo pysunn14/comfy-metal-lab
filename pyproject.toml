@@ -29,6 +29,7 @@ packages = ["src/comfy_metal"]
 [tool.hatch.build.targets.sdist]
 exclude = [
     "/_local",
+    "/.comfy-metal",
     "/dist",
     "/build",
 ]
