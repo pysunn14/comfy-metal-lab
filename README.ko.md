@@ -2,6 +2,8 @@
 
 > Apple Silicon에서 ComfyUI 추론을 재현 가능하게 벤치마크하고 최적화하기 위한 오픈소스 실험 하네스
 
+[English README](README.md)
+
 Comfy Metal Lab은 Apple Silicon 환경에서 ComfyUI 이미지 생성 워크로드의 성능을 측정하고, MPS/Metal 기반 최적화를 동일한 조건에서 비교하기 위한 프로젝트입니다.
 
 ComfyUI 자체를 포크하지 않고 **외부 runtime**으로 사용하며, 벤치마크 설정과 workload를 별도로 관리합니다.
