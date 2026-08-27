@@ -26,38 +26,43 @@ Comfy Metal Lab은 실행 환경을 세 가지로 나눕니다.
 
 > `AGENTS.md`를 먼저 읽고 managed workspace와 runtime을 확인해줘. 내가 정확한 workflow/workload를 지정하지 않았다면 어떤 대상을 사용할지 먼저 물어봐. 대상이 정해지면 doctor와 preflight까지 준비하고, 내가 실제 측정을 요청한 경우에만 benchmark를 실행해줘.
 
+## 설치
+
+`uv`로 CLI를 한 번 설치하면 이후에는 셸에서 `comfy-metal`을 바로 사용할 수 있습니다.
+
+```bash
+uv tool install git+https://github.com/pysunn14/comfy-metal-lab.git
+```
+
 ## 빠른 시작
 
 프로젝트별 로컬 작업공간을 만들고, 디스크 어디에 있는 API-format ComfyUI workflow든 가져올 수 있습니다.
 
 ```bash
-uv sync
 comfy-metal init
+comfy-metal doctor
 comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
 ```
 
-`.comfy-metal/` 아래에 workload, runtime, profile, result가 정리됩니다. 기본 `local` runtime과 `stock` profile도 자동 생성됩니다.
+`.comfy-metal/` 아래에 workload, runtime, profile, result가 정리됩니다. 기본 `local` runtime과 `stock` profile도 자동 생성됩니다. 인접한 위치에서 명확한 `ComfyUI` checkout을 찾으면 `init`이 기본 runtime의 `comfyui_root`에 기록하므로 이후 명령에서 경로를 반복해서 넣지 않아도 됩니다.
 
 실제 benchmark 전에 doctor로 머신과 runtime이 측정 가능한 상태인지 확인합니다. doctor는 이미지를 생성하지 않고 Python/PyTorch/MPS, runtime 경로, machine state, 경쟁 process, 실제 ComfyUI startup과 MPS telemetry를 확인해 `READY`, `WARN`, `BLOCKED` 중 하나를 반환합니다.
 
 ```bash
-comfy-metal doctor \
-  --comfyui-root ~/projects/ComfyUI \
-  --runtime local \
-  --profile stock
+comfy-metal doctor
 ```
+
+필요한 경우에만 `--comfyui-root`를 명시해 runtime 설정을 일시적으로 override할 수 있습니다.
 
 그다음 workload에 필요한 custom node가 실제 runtime에 있는지 preflight하고 benchmark를 실행합니다.
 
 ```bash
 comfy-metal preflight \
-  --comfyui-root ~/projects/ComfyUI \
   --workload my-workload \
   --runtime local \
   --profile stock
 
 comfy-metal bench \
-  --comfyui-root ~/projects/ComfyUI \
   --workload my-workload \
   --runtime local \
   --profile stock \
@@ -125,6 +130,7 @@ ComfyUI는 이 저장소에 vendoring하거나 fork하지 않습니다.
 
 ```toml
 name = "local-comfyui"
+comfyui_root = "/path/to/ComfyUI"
 base_directory = "/path/to/comfyui-model-base"
 ```
 
@@ -135,7 +141,7 @@ name = "metal-flash"
 server_args = ["--use-flash-attention"]
 ```
 
-API workflow에 등장하는 `class_type`은 자동으로 runtime 요구사항이 됩니다. `comfy-metal preflight`는 이미지를 생성하지 않고 ComfyUI의 `/object_info`와 비교해 필요한 node가 모두 존재하는지 확인합니다.
+API workflow에 등장하는 `class_type`은 자동으로 runtime 요구사항이 됩니다. `comfy-metal preflight`는 이미지를 생성하지 않고 ComfyUI의 `/object_info`와 비교해 필요한 node가 모두 존재하는지 확인합니다. `--comfyui-root`는 필요할 때 runtime의 경로를 일시적으로 override하는 용도로 계속 사용할 수 있습니다.
 
 ## Workload manifest
 

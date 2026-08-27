@@ -20,7 +20,7 @@ Prefer the managed workspace flow unless the user explicitly provides a manual l
 2. Identify the benchmark target from the user's request. If the user has not explicitly named or supplied a workflow/workload, ask which one to use. Do not infer a benchmark target from local files.
 3. If `.comfy-metal/` is missing, run `comfy-metal init`.
 4. If an explicitly selected workflow is outside the managed workspace, import it with `comfy-metal import-workload <workflow> --name <name>`. Do not copy private workflows into public repository paths. If automatic import is ambiguous, use `comfy-metal inspect <workflow>` and create/edit the managed manifest with explicit mutation/output targets instead of guessing.
-5. Run `comfy-metal doctor --comfyui-root <ComfyUI>` with the selected runtime/profile. Treat `BLOCKED` as a stop condition; surface `WARN` evidence before interpreting small speedups.
+5. Run `comfy-metal doctor` with the selected runtime/profile. The managed runtime should own `comfyui_root`; use `--comfyui-root` only as an explicit override. Treat `BLOCKED` as a stop condition; surface `WARN` evidence before interpreting small speedups.
 6. Run `comfy-metal preflight` for the selected workload/runtime/profile before expensive generation.
 7. Run `comfy-metal bench` only when the user has explicitly asked for a benchmark or measurement. If the request is only setup/readiness validation, stop after doctor/preflight and report the result.
 8. Compare only runs whose workload, runtime, and benchmark contract satisfy the comparison invariants, and only when comparison is part of the user's request.

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .benchmark import run_benchmark
 from .compare import compare_benchmarks
-from .config import load_profile, load_workload
+from .config import load_profile, load_runtime, load_workload
 from .doctor import format_doctor_report, run_doctor
 from .inspection import inspect_workflow, render_workload_toml
 from .preflight import run_preflight
@@ -48,7 +48,7 @@ def _parser() -> argparse.ArgumentParser:
     doctor_parser = subparsers.add_parser(
         "doctor", help="Check benchmark readiness using the selected ComfyUI runtime/profile"
     )
-    doctor_parser.add_argument("--comfyui-root", type=Path, required=True)
+    doctor_parser.add_argument("--comfyui-root", type=Path, default=None)
     doctor_parser.add_argument("--runtime", type=Path, default=Path("local"))
     doctor_parser.add_argument("--profile", type=Path, default=Path("stock"))
     doctor_parser.add_argument("--startup-timeout", type=float, default=60.0)
@@ -65,14 +65,14 @@ def _parser() -> argparse.ArgumentParser:
     preflight_parser = subparsers.add_parser(
         "preflight", help="Validate Workload × Runtime × Profile compatibility without generation"
     )
-    preflight_parser.add_argument("--comfyui-root", type=Path, required=True)
+    preflight_parser.add_argument("--comfyui-root", type=Path, default=None)
     preflight_parser.add_argument("--workload", type=Path, required=True)
     preflight_parser.add_argument("--runtime", type=Path, required=True)
     preflight_parser.add_argument("--profile", type=Path, required=True)
     _add_workspace_arg(preflight_parser)
 
     run_parser = subparsers.add_parser("run", help="Run one isolated workload/profile generation")
-    run_parser.add_argument("--comfyui-root", type=Path, required=True)
+    run_parser.add_argument("--comfyui-root", type=Path, default=None)
     run_parser.add_argument("--workload", type=Path, required=True)
     run_parser.add_argument("--runtime", type=Path, required=True)
     run_parser.add_argument("--profile", type=Path, required=True)
@@ -80,7 +80,7 @@ def _parser() -> argparse.ArgumentParser:
     _add_workspace_arg(run_parser)
 
     bench_parser = subparsers.add_parser("bench", help="Run repeated cold/warm benchmark sessions")
-    bench_parser.add_argument("--comfyui-root", type=Path, required=True)
+    bench_parser.add_argument("--comfyui-root", type=Path, default=None)
     bench_parser.add_argument("--workload", type=Path, required=True)
     bench_parser.add_argument("--runtime", type=Path, required=True)
     bench_parser.add_argument("--profile", type=Path, required=True)
@@ -120,6 +120,18 @@ def _resolve_experiment_configs(args: argparse.Namespace) -> tuple[Path, Path, P
         resolve_managed_config(args.workload, kind="workload", workspace_root=args.workspace),
         resolve_managed_config(args.runtime, kind="runtime", workspace_root=args.workspace),
         resolve_managed_config(args.profile, kind="profile", workspace_root=args.workspace),
+    )
+
+
+def _resolve_comfyui_root(cli_root: Path | None, runtime_path: Path) -> Path:
+    if cli_root is not None:
+        return cli_root.expanduser()
+    runtime = load_runtime(runtime_path)
+    if runtime.comfyui_root is not None:
+        return runtime.comfyui_root
+    raise ValueError(
+        "ComfyUI root is not configured; set comfyui_root in the selected runtime "
+        "or pass --comfyui-root"
     )
 
 
@@ -163,8 +175,9 @@ def main(argv: list[str] | None = None) -> int:
         profile = resolve_managed_config(
             args.profile, kind="profile", workspace_root=args.workspace
         )
+        comfyui_root = _resolve_comfyui_root(args.comfyui_root, runtime)
         report = run_doctor(
-            comfyui_root=args.comfyui_root,
+            comfyui_root=comfyui_root,
             runtime_path=runtime,
             profile_path=profile,
             workspace_root=args.workspace,
@@ -179,8 +192,9 @@ def main(argv: list[str] | None = None) -> int:
         return _inspect(args)
     if args.command == "preflight":
         workload, runtime, profile = _resolve_experiment_configs(args)
+        comfyui_root = _resolve_comfyui_root(args.comfyui_root, runtime)
         report = run_preflight(
-            comfyui_root=args.comfyui_root,
+            comfyui_root=comfyui_root,
             workload_path=workload,
             runtime_path=runtime,
             profile_path=profile,
@@ -189,11 +203,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "run":
         workload, runtime, profile = _resolve_experiment_configs(args)
+        comfyui_root = _resolve_comfyui_root(args.comfyui_root, runtime)
         output_dir = _managed_output_dir(
             args, workload_path=workload, profile_path=profile, prefix="run"
         )
         report = run_once(
-            comfyui_root=args.comfyui_root,
+            comfyui_root=comfyui_root,
             workload_path=workload,
             runtime_path=runtime,
             profile_path=profile,
@@ -203,11 +218,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "bench":
         workload, runtime, profile = _resolve_experiment_configs(args)
+        comfyui_root = _resolve_comfyui_root(args.comfyui_root, runtime)
         output_dir = _managed_output_dir(
             args, workload_path=workload, profile_path=profile, prefix="bench"
         )
         report = run_benchmark(
-            comfyui_root=args.comfyui_root,
+            comfyui_root=comfyui_root,
             workload_path=workload,
             runtime_path=runtime,
             profile_path=profile,

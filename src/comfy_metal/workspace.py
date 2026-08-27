@@ -56,11 +56,36 @@ def _write_if_missing(path: Path, text: str, *, created: list[str], root: Path) 
     created.append(str(path.relative_to(root)))
 
 
+def _detect_comfyui_root(root: Path) -> Path | None:
+    """Detect an obvious ComfyUI checkout adjacent to the project without scanning disk."""
+
+    project_root = root.expanduser().resolve().parent
+    candidates = (
+        project_root / "ComfyUI",
+        project_root.parent / "ComfyUI",
+    )
+    matches: list[Path] = []
+    for candidate in candidates:
+        if (candidate / "main.py").is_file():
+            resolved = candidate.resolve()
+            if resolved not in matches:
+                matches.append(resolved)
+    return matches[0] if len(matches) == 1 else None
+
+
+def _default_runtime_text(comfyui_root: Path | None) -> str:
+    text = 'name = "local"\n'
+    if comfyui_root is not None:
+        text += f"comfyui_root = {json.dumps(str(comfyui_root))}\n"
+    return text
+
+
 def init_workspace(root: Path = Path(".comfy-metal")) -> WorkspaceInitResult:
     """Create an idempotent project-local managed workspace."""
 
     root = root.expanduser()
     created: list[str] = []
+    detected_comfyui_root = _detect_comfyui_root(root)
     if not root.exists():
         root.mkdir(parents=True)
         created.append(".")
@@ -77,12 +102,20 @@ def init_workspace(root: Path = Path(".comfy-metal")) -> WorkspaceInitResult:
 
     # Protect local data even when the containing repository does not ignore .comfy-metal/.
     _write_if_missing(root / ".gitignore", "*\n!.gitignore\n", created=created, root=root)
-    _write_if_missing(
-        root / "runtimes" / "local.toml",
-        'name = "local"\n',
-        created=created,
-        root=root,
-    )
+    runtime_path = root / "runtimes" / "local.toml"
+    runtime_text = _default_runtime_text(detected_comfyui_root)
+    if runtime_path.exists() and runtime_path.read_text(encoding="utf-8") == 'name = "local"\n':
+        # Backfill only the untouched managed default; never rewrite a customized runtime.
+        if detected_comfyui_root is not None:
+            runtime_path.write_text(runtime_text, encoding="utf-8")
+            created.append("runtimes/local.toml (updated)")
+    else:
+        _write_if_missing(
+            runtime_path,
+            runtime_text,
+            created=created,
+            root=root,
+        )
     _write_if_missing(
         root / "profiles" / "stock.toml",
         'name = "stock"\nserver_args = []\n',

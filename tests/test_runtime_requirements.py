@@ -10,6 +10,7 @@ def test_runtime_config_owns_machine_specific_model_paths(tmp_path: Path) -> Non
     config = tmp_path / "runtime.toml"
     config.write_text(
         'name = "local-comfyui"\n'
+        'comfyui_root = "/runtime/ComfyUI"\n'
         'base_directory = "/models/comfy"\n'
         'python = "/runtime/python"\n'
         'extra_model_paths = ["/extra/a.yaml", "/extra/b.yaml"]\n'
@@ -19,6 +20,7 @@ def test_runtime_config_owns_machine_specific_model_paths(tmp_path: Path) -> Non
     runtime = load_runtime(config)
 
     assert runtime.name == "local-comfyui"
+    assert runtime.comfyui_root == Path("/runtime/ComfyUI")
     assert runtime.base_directory == Path("/models/comfy")
     assert runtime.python == Path("/runtime/python")
     assert runtime.extra_model_paths == (Path("/extra/a.yaml"), Path("/extra/b.yaml"))

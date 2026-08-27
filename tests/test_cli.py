@@ -69,13 +69,17 @@ def test_cli_bench_resolves_short_names_and_allocates_managed_output(
     assert "bench-001" in stderr
 
 
-def test_cli_doctor_resolves_managed_defaults(tmp_path: Path, monkeypatch, capsys) -> None:
+def test_cli_doctor_resolves_comfyui_root_from_managed_runtime(tmp_path: Path, monkeypatch, capsys) -> None:
     from comfy_metal.doctor import DoctorCheck, DoctorReport
 
     workspace = tmp_path / ".comfy-metal"
     init_workspace(workspace)
     comfyui = tmp_path / "ComfyUI"
     comfyui.mkdir()
+    runtime_path = workspace / "runtimes" / "local.toml"
+    runtime_path.write_text(
+        f'name = "local"\ncomfyui_root = "{comfyui}"\n', encoding="utf-8"
+    )
     captured = {}
 
     def fake_doctor(**kwargs):
@@ -84,15 +88,36 @@ def test_cli_doctor_resolves_managed_defaults(tmp_path: Path, monkeypatch, capsy
 
     monkeypatch.setattr("comfy_metal.cli.run_doctor", fake_doctor)
 
-    assert main([
-        "doctor",
-        "--workspace", str(workspace),
-        "--comfyui-root", str(comfyui),
-    ]) == 0
+    assert main(["doctor", "--workspace", str(workspace)]) == 0
 
-    assert captured["runtime_path"] == workspace / "runtimes" / "local.toml"
+    assert captured["comfyui_root"] == comfyui
+    assert captured["runtime_path"] == runtime_path
     assert captured["profile_path"] == workspace / "profiles" / "stock.toml"
     assert "Benchmark readiness: READY" in capsys.readouterr().out
+
+
+def test_cli_comfyui_root_flag_overrides_runtime(tmp_path: Path, monkeypatch) -> None:
+    from comfy_metal.doctor import DoctorCheck, DoctorReport
+
+    workspace = tmp_path / ".comfy-metal"
+    init_workspace(workspace)
+    configured = tmp_path / "ConfiguredComfyUI"
+    override = tmp_path / "OverrideComfyUI"
+    (workspace / "runtimes" / "local.toml").write_text(
+        f'name = "local"\ncomfyui_root = "{configured}"\n', encoding="utf-8"
+    )
+    captured = {}
+
+    def fake_doctor(**kwargs):
+        captured.update(kwargs)
+        return DoctorReport((DoctorCheck("MPS", "pass", "available"),))
+
+    monkeypatch.setattr("comfy_metal.cli.run_doctor", fake_doctor)
+
+    assert main([
+        "doctor", "--workspace", str(workspace), "--comfyui-root", str(override)
+    ]) == 0
+    assert captured["comfyui_root"] == override
 
 
 def test_cli_doctor_returns_two_when_blocked(tmp_path: Path, monkeypatch, capsys) -> None:

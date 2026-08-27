@@ -20,18 +20,25 @@ Using a coding agent? Ask it to read [`AGENTS.md`](AGENTS.md) first. Give it the
 
 > Read `AGENTS.md` first and inspect the managed workspace/runtime. If I have not specified the exact workflow or workload to benchmark, ask me which one to use. Once the target is explicit, prepare it and run doctor/preflight; only run the benchmark when I explicitly ask for a measurement.
 
+## Install
+
+Install the CLI once with `uv`; after that, `comfy-metal` is available directly from your shell:
+
+```bash
+uv tool install git+https://github.com/pysunn14/comfy-metal-lab.git
+```
+
 ## Quickstart
 
 Initialize a project-local managed workspace, then import an API-format ComfyUI workflow from anywhere on disk:
 
 ```bash
-uv sync
 comfy-metal init
-comfy-metal doctor --comfyui-root ~/projects/ComfyUI
+comfy-metal doctor
 comfy-metal import-workload ~/Downloads/workflow_api.json --name my-workload
 ```
 
-This creates a private local workspace under `.comfy-metal/` with managed workloads, runtimes, profiles, and results. The default `local` runtime and `stock` profile are created automatically.
+This creates a private local workspace under `.comfy-metal/` with managed workloads, runtimes, profiles, and results. The default `local` runtime and `stock` profile are created automatically. When an obvious adjacent `ComfyUI` checkout is found, `init` records it as `comfyui_root` in the default runtime so later commands do not need the path repeated.
 
 `comfy-metal doctor` performs a real readiness check: it probes the selected ComfyUI Python/PyTorch/MPS runtime, validates runtime paths, records machine state, detects competing ComfyUI/benchmark processes, starts ComfyUI with the selected runtime/profile, checks `/system_stats`, and verifies the MPS telemetry wrapper. It reports `READY`, `WARN`, or `BLOCKED` without generating an image.
 
@@ -39,13 +46,11 @@ Managed configs can be referenced by name:
 
 ```bash
 comfy-metal preflight \
-  --comfyui-root ~/projects/ComfyUI \
   --workload my-workload \
   --runtime local \
   --profile stock
 
 comfy-metal bench \
-  --comfyui-root ~/projects/ComfyUI \
   --workload my-workload \
   --runtime local \
   --profile stock \
@@ -61,6 +66,7 @@ Machine-specific launch configuration belongs in a runtime config, while profile
 ```toml
 # runtime.toml
 name = "local-comfyui"
+comfyui_root = "/path/to/ComfyUI"
 base_directory = "/path/to/comfyui-model-base"
 ```
 
@@ -70,7 +76,7 @@ name = "metal-flash"
 server_args = ["--use-flash-attention"]
 ```
 
-Use `comfy-metal preflight --comfyui-root ... --workload ... --runtime ... --profile ...` to start ComfyUI, verify required nodes through `/object_info`, and exit without generating an image. Benchmarks keep the workload and runtime fixed while changing profiles.
+Use `comfy-metal preflight --workload ... --runtime ... --profile ...` to start ComfyUI, verify required nodes through `/object_info`, and exit without generating an image. `--comfyui-root` remains available as an explicit override when needed. Benchmarks keep the workload and runtime fixed while changing profiles.
 
 ## Workload manifests
 

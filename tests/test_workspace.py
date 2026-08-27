@@ -43,6 +43,43 @@ def test_init_workspace_is_idempotent_and_does_not_overwrite_configs(tmp_path: P
     assert runtime.read_text() == 'name = "custom-local"\n'
 
 
+def test_init_workspace_detects_adjacent_comfyui_for_default_runtime(tmp_path: Path) -> None:
+    project = tmp_path / "comfy-metal-lab"
+    project.mkdir()
+    comfyui = tmp_path / "ComfyUI"
+    comfyui.mkdir()
+    (comfyui / "main.py").write_text("# ComfyUI\n", encoding="utf-8")
+    root = project / ".comfy-metal"
+
+    init_workspace(root)
+
+    runtime = (root / "runtimes" / "local.toml").read_text(encoding="utf-8")
+    assert 'name = "local"' in runtime
+    assert f'comfyui_root = "{comfyui.resolve()}"' in runtime
+
+
+def test_init_workspace_backfills_only_untouched_default_runtime(tmp_path: Path) -> None:
+    project = tmp_path / "comfy-metal-lab"
+    project.mkdir()
+    root = project / ".comfy-metal"
+    init_workspace(root)
+    runtime_path = root / "runtimes" / "local.toml"
+    assert runtime_path.read_text(encoding="utf-8") == 'name = "local"\n'
+
+    comfyui = tmp_path / "ComfyUI"
+    comfyui.mkdir()
+    (comfyui / "main.py").write_text("# ComfyUI\n", encoding="utf-8")
+    init_workspace(root)
+
+    assert f'comfyui_root = "{comfyui.resolve()}"' in runtime_path.read_text(encoding="utf-8")
+
+    runtime_path.write_text('name = "local"\nserver_args = ["--disable-auto-launch"]\n', encoding="utf-8")
+    init_workspace(root)
+    assert runtime_path.read_text(encoding="utf-8") == (
+        'name = "local"\nserver_args = ["--disable-auto-launch"]\n'
+    )
+
+
 def test_import_workload_copies_external_workflow_and_generates_manifest(tmp_path: Path) -> None:
     root = tmp_path / ".comfy-metal"
     init_workspace(root)

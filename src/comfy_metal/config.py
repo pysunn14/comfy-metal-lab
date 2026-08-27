@@ -94,6 +94,7 @@ class RuntimeConfig:
     """Machine/runtime-specific ComfyUI launch configuration."""
 
     name: str
+    comfyui_root: Path | None = None
     python: Path | None = None
     base_directory: Path | None = None
     extra_model_paths: tuple[Path, ...] = ()
@@ -296,6 +297,9 @@ def load_runtime(path: Path) -> RuntimeConfig:
     data = _load_toml(path)
     name = _required_string(data, "name", source=path)
 
+    comfyui_root_value = data.get("comfyui_root")
+    if comfyui_root_value is not None and not isinstance(comfyui_root_value, str):
+        raise ValueError(f"{path}: comfyui_root must be a string")
     python_value = data.get("python")
     if python_value is not None and not isinstance(python_value, str):
         raise ValueError(f"{path}: python must be a string")
@@ -311,6 +315,7 @@ def load_runtime(path: Path) -> RuntimeConfig:
 
     return RuntimeConfig(
         name=name,
+        comfyui_root=Path(comfyui_root_value).expanduser() if comfyui_root_value else None,
         python=Path(python_value) if python_value else None,
         base_directory=Path(base_value) if base_value else None,
         extra_model_paths=tuple(Path(item) for item in extra_paths),
@@ -351,7 +356,7 @@ def load_profile(path: Path) -> ProfileConfig:
     data = _load_toml(path)
     name = _required_string(data, "name", source=path)
 
-    forbidden = sorted({"python", "base_directory", "extra_model_paths"}.intersection(data))
+    forbidden = sorted({"comfyui_root", "python", "base_directory", "extra_model_paths"}.intersection(data))
     if forbidden:
         raise ValueError(
             f"{path}: machine-specific fields belong in runtime config, not profile: {', '.join(forbidden)}"
