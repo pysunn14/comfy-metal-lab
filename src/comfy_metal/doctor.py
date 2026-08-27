@@ -415,12 +415,38 @@ def run_doctor(
     return DoctorReport(tuple(checks), evidence)
 
 
-def format_doctor_report(report: DoctorReport) -> str:
+_ANSI_RESET = "\033[0m"
+_ANSI_STATUS = {
+    "pass": "\033[32m",
+    "warn": "\033[33m",
+    "fail": "\033[31m",
+}
+_ANSI_READINESS = {
+    "READY": "\033[32m",
+    "WARN": "\033[33m",
+    "BLOCKED": "\033[31m",
+}
+
+
+def _colorize(text: str, color: str, *, enabled: bool) -> str:
+    if not enabled:
+        return text
+    return f"{color}{text}{_ANSI_RESET}"
+
+
+def format_doctor_report(report: DoctorReport, *, color: bool = False) -> str:
     symbols = {"pass": "PASS", "warn": "WARN", "fail": "FAIL"}
     lines = ["Comfy Metal Doctor", ""]
     for check in report.checks:
-        lines.append(f"[{symbols[check.status]}] {check.name}: {check.detail}")
-    lines.extend(["", f"Benchmark readiness: {report.readiness}"])
+        label = f"[{symbols[check.status]}]"
+        label = _colorize(label, _ANSI_STATUS[check.status], enabled=color)
+        lines.append(f"{label} {check.name}: {check.detail}")
+    readiness = _colorize(
+        report.readiness,
+        _ANSI_READINESS[report.readiness],
+        enabled=color,
+    )
+    lines.extend(["", f"Benchmark readiness: {readiness}"])
     if report.readiness == "WARN":
         lines.append("Timing may be usable, but review warnings before small performance comparisons.")
     elif report.readiness == "BLOCKED":

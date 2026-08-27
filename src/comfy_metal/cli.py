@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -186,7 +187,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.json_output:
             print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         else:
-            print(format_doctor_report(report))
+            use_color = sys.stdout.isatty() and "NO_COLOR" not in os.environ
+            print(format_doctor_report(report, color=use_color))
         return 2 if report.readiness == "BLOCKED" else 0
     if args.command == "inspect":
         return _inspect(args)

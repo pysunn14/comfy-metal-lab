@@ -2,13 +2,39 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from comfy_metal.doctor import DoctorCheck, DoctorReport, run_doctor
+from comfy_metal.doctor import DoctorCheck, DoctorReport, format_doctor_report, run_doctor
 
 
 def test_doctor_report_readiness_uses_fail_then_warn_then_ready() -> None:
     assert DoctorReport((DoctorCheck("a", "pass", "ok"),)).readiness == "READY"
     assert DoctorReport((DoctorCheck("a", "warn", "hmm"),)).readiness == "WARN"
     assert DoctorReport((DoctorCheck("a", "fail", "bad"), DoctorCheck("b", "warn", "hmm"))).readiness == "BLOCKED"
+
+
+def test_doctor_formatter_colors_only_status_tokens_when_enabled() -> None:
+    report = DoctorReport((
+        DoctorCheck("ok", "pass", "fine"),
+        DoctorCheck("caution", "warn", "review"),
+        DoctorCheck("broken", "fail", "fix it"),
+    ))
+
+    output = format_doctor_report(report, color=True)
+
+    assert "\033[32m[PASS]\033[0m ok: fine" in output
+    assert "\033[33m[WARN]\033[0m caution: review" in output
+    assert "\033[31m[FAIL]\033[0m broken: fix it" in output
+    assert "Benchmark readiness: \033[31mBLOCKED\033[0m" in output
+    assert "\033[" not in format_doctor_report(report)
+
+
+def test_doctor_json_remains_plain_structured_data() -> None:
+    report = DoctorReport((DoctorCheck("MPS", "pass", "available"),))
+
+    payload = report.to_dict()
+
+    assert payload["readiness"] == "READY"
+    assert payload["checks"][0]["status"] == "pass"
+    assert "\033[" not in str(payload)
 
 
 def test_doctor_runs_real_checks_through_injected_probes(tmp_path: Path, monkeypatch) -> None:
