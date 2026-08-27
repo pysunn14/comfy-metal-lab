@@ -129,3 +129,53 @@ def compare_image_sets(
         "median_ssim": statistics.median(scores),
         "passed": minimum >= min_ssim,
     }
+
+
+def describe_image_sets(
+    baseline_images: Sequence[Path],
+    candidate_images: Sequence[Path],
+    *,
+    unit: str = "session",
+) -> dict[str, Any]:
+    """Describe cross-workload SSIM without treating similarity as a correctness gate."""
+
+    if not baseline_images or not candidate_images:
+        raise ValueError("quality comparison requires non-empty image sets")
+    if len(baseline_images) != len(candidate_images):
+        raise ValueError("baseline and candidate must have the same number of images")
+
+    paired: list[dict[str, Any]] = []
+    for index, (baseline, candidate) in enumerate(
+        zip(baseline_images, candidate_images, strict=True)
+    ):
+        try:
+            score = compute_ssim(baseline, candidate)
+        except ValueError as exc:
+            if "image dimensions must match for SSIM" not in str(exc):
+                raise
+            return {
+                "metric": "ssim",
+                "role": "descriptive",
+                "status": "not_applicable",
+                "unit": unit,
+                "reason": str(exc),
+            }
+        paired.append(
+            {
+                "index": index,
+                "baseline": str(baseline),
+                "candidate": str(candidate),
+                "ssim": score,
+            }
+        )
+
+    scores = [float(pair["ssim"]) for pair in paired]
+    return {
+        "metric": "ssim",
+        "role": "descriptive",
+        "status": "available",
+        "unit": unit,
+        "paired_ssim": paired,
+        "min_ssim": min(scores),
+        "median_ssim": statistics.median(scores),
+    }

@@ -28,6 +28,9 @@ def _benchmark(
     root: Path,
     *,
     profile: str,
+    workload: str = "apple",
+    workload_sha: str = "workload-sha",
+    workflow_sha: str = "workflow-sha",
     runtime: str = "local",
     runtime_sha: str = "runtime-sha",
     cold_seconds: list[float],
@@ -56,7 +59,7 @@ def _benchmark(
     report = {
         "schema_version": 4,
         "status": "completed",
-        "workload": "apple",
+        "workload": workload,
         "runtime": runtime,
         "profile": profile,
         "session_contract": {
@@ -71,8 +74,8 @@ def _benchmark(
         "environment": {
             "pre": {
                 "provenance": {
-                    "workload_sha256": "workload-sha",
-                    "workflow_sha256": "workflow-sha",
+                    "workload_sha256": workload_sha,
+                    "workflow_sha256": workflow_sha,
                     "runtime_sha256": runtime_sha,
                 }
             }
@@ -142,3 +145,46 @@ def test_compare_rejects_different_runtime_configs(tmp_path: Path) -> None:
             baseline_dir=baseline, candidate_dir=candidate, comparison_path=comparison,
             output_dir=tmp_path / "comparison-runtime-output",
         )
+
+
+def test_compare_still_rejects_different_workloads(tmp_path: Path) -> None:
+    baseline = _benchmark(
+        tmp_path / "baseline-workload", profile="stock", workload="base",
+        cold_seconds=[10.0], warm_seconds=[5.0], cold_values=[100], warm_values=[110],
+    )
+    candidate = _benchmark(
+        tmp_path / "candidate-workload", profile="metal", workload="turbo",
+        workload_sha="turbo-sha", workflow_sha="turbo-workflow-sha",
+        cold_seconds=[9.0], warm_seconds=[4.0], cold_values=[100], warm_values=[110],
+    )
+    comparison = tmp_path / "comparison-workload.toml"
+    comparison.write_text('name = "strict"\n')
+
+    import pytest
+    with pytest.raises(ValueError, match="workload"):
+        compare_benchmarks(
+            baseline_dir=baseline, candidate_dir=candidate, comparison_path=comparison,
+            output_dir=tmp_path / "comparison-workload-output",
+        )
+
+
+def test_compare_still_invalidates_low_ssim_speedup(tmp_path: Path) -> None:
+    baseline = _benchmark(
+        tmp_path / "baseline-quality", profile="stock",
+        cold_seconds=[10.0], warm_seconds=[5.0], cold_values=[0], warm_values=[0],
+    )
+    candidate = _benchmark(
+        tmp_path / "candidate-quality", profile="metal",
+        cold_seconds=[8.0], warm_seconds=[4.0], cold_values=[255], warm_values=[255],
+    )
+    comparison = tmp_path / "comparison-quality.toml"
+    comparison.write_text('name = "strict"\n[quality]\nmin_ssim = 0.90\n')
+
+    report = compare_benchmarks(
+        baseline_dir=baseline, candidate_dir=candidate, comparison_path=comparison,
+        output_dir=tmp_path / "comparison-quality-output",
+    )
+
+    assert report["quality"]["passed"] is False
+    assert report["valid_speedup"] is False
+    assert report["speedup_median"] == 5.0 / 4.0

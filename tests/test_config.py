@@ -181,3 +181,31 @@ def test_workload_rejects_override_and_session_mutation_on_same_target(tmp_path:
 
     with pytest.raises(ValueError, match="both override and session mutation"):
         load_workload(config)
+
+
+def test_load_comparison_contract_vary(tmp_path: Path) -> None:
+    from comfy_metal.config import load_comparison_contract
+
+    path = tmp_path / "contract.toml"
+    path.write_text('name = "base-vs-turbo"\nvary = ["workload", "profile"]\n')
+
+    config = load_comparison_contract(path)
+
+    assert config.name == "base-vs-turbo"
+    assert config.vary == ("workload", "profile")
+    assert config.min_ssim == 0.90
+
+
+def test_comparison_contract_rejects_empty_duplicate_or_unknown_vary(tmp_path: Path) -> None:
+    from comfy_metal.config import load_comparison_contract
+
+    cases = (
+        ('name = "bad"\nvary = []\n', "non-empty"),
+        ('name = "bad"\nvary = ["workload", "workload"]\n', "duplicates"),
+        ('name = "bad"\nvary = ["sampler"]\n', "only workload"),
+    )
+    for index, (text, message) in enumerate(cases):
+        path = tmp_path / f"bad-{index}.toml"
+        path.write_text(text)
+        with pytest.raises(ValueError, match=message):
+            load_comparison_contract(path)

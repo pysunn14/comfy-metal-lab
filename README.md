@@ -110,6 +110,19 @@ value = false
 
 Static overrides and session mutations are separate contracts and cannot target the same workflow input/path.
 
+## Comparisons
+
+`comfy-metal compare` remains the strict profile-comparison path: workload and runtime must match, and SSIM acts as a correctness gate.
+
+For broader experiments, `comfy-metal compare-contract` uses an explicit `vary` contract. Factors listed in `vary` may differ; undeclared factors must still match.
+
+```toml
+name = "base-vs-turbo"
+vary = ["workload"]
+```
+
+When `workload` varies, SSIM is descriptive rather than a pass/fail gate. Multi-factor contracts such as `vary = ["workload", "profile"]` measure the combined stack effect and should not be attributed to one factor alone.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).

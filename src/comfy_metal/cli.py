@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .benchmark import run_benchmark
 from .compare import compare_benchmarks
+from .contract_compare import compare_by_contract
 from .config import load_profile, load_runtime, load_workload
 from .doctor import format_doctor_report, run_doctor
 from .inspection import inspect_workflow, render_workload_toml
@@ -90,12 +91,21 @@ def _parser() -> argparse.ArgumentParser:
     bench_parser.add_argument("--swap-interval", type=float, default=1.0)
     _add_workspace_arg(bench_parser)
 
-    compare_parser = subparsers.add_parser("compare", help="Compare two completed benchmark runs")
+    compare_parser = subparsers.add_parser("compare", help="Strict profile comparison of two completed benchmark runs")
     compare_parser.add_argument("--baseline", type=Path, required=True)
     compare_parser.add_argument("--candidate", type=Path, required=True)
     compare_parser.add_argument("--comparison", type=Path, required=True)
     compare_parser.add_argument("--output-dir", type=Path, required=True)
     _add_workspace_arg(compare_parser)
+
+    contract_parser = subparsers.add_parser(
+        "compare-contract", help="Compare completed benchmark runs under an explicit vary contract"
+    )
+    contract_parser.add_argument("--baseline", type=Path, required=True)
+    contract_parser.add_argument("--candidate", type=Path, required=True)
+    contract_parser.add_argument("--comparison", type=Path, required=True)
+    contract_parser.add_argument("--output-dir", type=Path, required=True)
+    _add_workspace_arg(contract_parser)
     return parser
 
 
@@ -241,6 +251,18 @@ def main(argv: list[str] | None = None) -> int:
             args.comparison, kind="comparison", workspace_root=args.workspace
         )
         report = compare_benchmarks(
+            baseline_dir=args.baseline,
+            candidate_dir=args.candidate,
+            comparison_path=comparison,
+            output_dir=args.output_dir,
+        )
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
+    if args.command == "compare-contract":
+        comparison = resolve_managed_config(
+            args.comparison, kind="comparison", workspace_root=args.workspace
+        )
+        report = compare_by_contract(
             baseline_dir=args.baseline,
             candidate_dir=args.candidate,
             comparison_path=comparison,

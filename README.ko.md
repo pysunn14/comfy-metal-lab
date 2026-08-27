@@ -177,12 +177,25 @@ value = false
 
 `overrides`와 `session.mutations`는 역할이 다르며 같은 target을 동시에 지정할 수 없습니다.
 
+## 비교
+
+`comfy-metal compare`는 기존의 엄격한 profile comparison입니다. workload와 runtime이 같아야 하며, SSIM은 correctness gate로 동작합니다.
+
+더 넓은 실험은 `comfy-metal compare-contract`에서 명시적인 `vary` contract를 사용합니다. `vary`에 선언한 factor만 달라도 되고, 선언하지 않은 factor는 계속 같아야 합니다.
+
+```toml
+name = "base-vs-turbo"
+vary = ["workload"]
+```
+
+`workload`가 바뀌는 비교에서는 SSIM을 pass/fail gate가 아니라 설명용 유사도 지표로 기록합니다. `vary = ["workload", "profile"]`처럼 여러 factor를 함께 바꾸면 결과는 개별 요인이 아니라 결합된 stack 효과로 해석합니다.
+
 ## CLI 요약
 
 일반적인 사용 순서는 다음과 같습니다.
 
 ```text
-init → import-workload → doctor → preflight → bench → compare
+init → import-workload → doctor → preflight → bench → compare / compare-contract
 ```
 
 `inspect`는 workflow를 읽기 전용으로 분석하거나 manifest target을 수동으로 확인할 때 사용할 수 있습니다.

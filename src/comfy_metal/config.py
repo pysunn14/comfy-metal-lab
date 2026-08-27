@@ -5,9 +5,10 @@ from __future__ import annotations
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 Scalar = str | int | float | bool
+ComparisonFactor = Literal["workload", "runtime", "profile"]
 
 
 @dataclass(frozen=True)
@@ -135,6 +136,13 @@ class WorkloadConfig:
 class ComparisonConfig:
     name: str
     quality_metric: str = "ssim"
+    min_ssim: float = 0.90
+
+
+@dataclass(frozen=True)
+class ComparisonContractConfig:
+    name: str
+    vary: tuple[ComparisonFactor, ...]
     min_ssim: float = 0.90
 
 
@@ -389,5 +397,39 @@ def load_comparison(path: Path) -> ComparisonConfig:
     return ComparisonConfig(
         name=name,
         quality_metric=metric,
+        min_ssim=threshold,
+    )
+
+
+def load_comparison_contract(path: Path) -> ComparisonContractConfig:
+    data = _load_toml(path)
+    name = _required_string(data, "name", source=path)
+    raw_vary = data.get("vary")
+    allowed = {"workload", "runtime", "profile"}
+    if not isinstance(raw_vary, list) or not raw_vary:
+        raise ValueError(f"{path}: vary must be a non-empty array")
+    if not all(isinstance(item, str) and item in allowed for item in raw_vary):
+        raise ValueError(
+            f"{path}: vary may contain only workload, runtime, and profile"
+        )
+    if len(set(raw_vary)) != len(raw_vary):
+        raise ValueError(f"{path}: vary must not contain duplicates")
+
+    quality = data.get("quality", {})
+    if not isinstance(quality, dict):
+        raise ValueError(f"{path}: quality must be a table")
+    metric = quality.get("metric", "ssim")
+    if metric != "ssim":
+        raise ValueError(f"{path}: unsupported quality metric: {metric!r}")
+    threshold = quality.get("min_ssim", 0.90)
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
+        raise ValueError(f"{path}: quality.min_ssim must be a number")
+    threshold = float(threshold)
+    if not 0.0 <= threshold <= 1.0:
+        raise ValueError(f"{path}: quality.min_ssim must be between 0 and 1")
+
+    return ComparisonContractConfig(
+        name=name,
+        vary=tuple(raw_vary),  # type: ignore[arg-type]
         min_ssim=threshold,
     )

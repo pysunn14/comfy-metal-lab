@@ -42,6 +42,7 @@ Do not ask the user to manually organize files that `init` or `import-workload` 
 - The first real session may serve as the runtime probe; do not add a separate expensive image-generation canary by default.
 - Do not change the workload or silently relax validation just to make a run pass.
 - Do not report a speedup as valid when the run or quality checks are invalid.
+- Use `compare` for strict fixed-workload profile comparisons. Use `compare-contract` only when the comparison config explicitly declares allowed changes with `vary`; never relax or bypass undeclared-factor validation.
 
 ## Safety
 

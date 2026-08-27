@@ -137,3 +137,31 @@ def test_cli_doctor_returns_two_when_blocked(tmp_path: Path, monkeypatch, capsys
     ]) == 2
     payload = json.loads(capsys.readouterr().out)
     assert payload["readiness"] == "BLOCKED"
+
+
+def test_cli_compare_contract_resolves_managed_comparison(tmp_path: Path, monkeypatch, capsys) -> None:
+    workspace = tmp_path / ".comfy-metal"
+    init_workspace(workspace)
+    comparison = workspace / "comparisons" / "base-vs-turbo.toml"
+    comparison.write_text('name = "base-vs-turbo"\nvary = ["workload"]\n')
+    captured = {}
+
+    def fake_compare(**kwargs):
+        captured.update(kwargs)
+        return {"status": "completed", "comparison_type": "contract"}
+
+    monkeypatch.setattr("comfy_metal.cli.compare_by_contract", fake_compare)
+
+    assert main([
+        "compare-contract",
+        "--workspace", str(workspace),
+        "--baseline", str(tmp_path / "base"),
+        "--candidate", str(tmp_path / "turbo"),
+        "--comparison", "base-vs-turbo",
+        "--output-dir", str(tmp_path / "out"),
+    ]) == 0
+
+    assert captured["comparison_path"] == comparison
+    assert captured["baseline_dir"] == tmp_path / "base"
+    assert captured["candidate_dir"] == tmp_path / "turbo"
+    assert json.loads(capsys.readouterr().out)["comparison_type"] == "contract"
